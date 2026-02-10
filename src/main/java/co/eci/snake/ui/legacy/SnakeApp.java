@@ -1,15 +1,14 @@
 package co.eci.snake.ui.legacy;
 
 import co.eci.snake.concurrency.SnakeRunner;
-import co.eci.snake.core.Board;
-import co.eci.snake.core.Direction;
-import co.eci.snake.core.Position;
-import co.eci.snake.core.Snake;
+import co.eci.snake.core.*;
 import co.eci.snake.core.engine.GameClock;
+import co.eci.snake.core.engine.PauseController;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -21,6 +20,8 @@ public final class SnakeApp extends JFrame {
   private final JButton actionButton;
   private final GameClock clock;
   private final java.util.List<Snake> snakes = new java.util.ArrayList<>();
+  private final PauseController pause = new PauseController();
+  private int longestSnakeLength;
 
   public SnakeApp() {
     super("The Snake Race");
@@ -48,7 +49,7 @@ public final class SnakeApp extends JFrame {
     this.clock = new GameClock(60, () -> SwingUtilities.invokeLater(gamePanel::repaint));
 
     var exec = Executors.newVirtualThreadPerTaskExecutor();
-    snakes.forEach(s -> exec.submit(new SnakeRunner(s, board)));
+      snakes.forEach(s -> exec.submit(new SnakeRunner(s, board, pause)));
 
     actionButton.addActionListener((ActionEvent e) -> togglePause());
 
@@ -128,17 +129,43 @@ public final class SnakeApp extends JFrame {
     clock.start();
   }
 
-  private void togglePause() {
-    if ("Action".equals(actionButton.getText())) {
-      actionButton.setText("Resume");
-      clock.pause();
-    } else {
-      actionButton.setText("Action");
-      clock.resume();
-    }
-  }
 
-  public static final class GamePanel extends JPanel {
+
+    private void togglePause() {
+        if (pause.get() == GameState.RUNNING) {
+            actionButton.setText("Resume");
+            clock.pause();
+            pause.pause();
+
+            IntSummaryStatistics stats = snakes.stream()
+                    .mapToInt(Snake::getMaxLength)
+                    .summaryStatistics();
+
+            int longest = stats.getMax();
+            int shortest = stats.getMin();
+
+
+            if (SwingUtilities.isEventDispatchThread()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Longest snake: " + longest + "\nShortest snake: " + shortest
+                );
+            } else {
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        this,
+                        "Longest snake: " + longest + "\nShortest snake: " + shortest
+                ));
+            }
+        } else {
+            actionButton.setText("Action");
+            pause.resume();
+            clock.resume();
+        }
+    }
+
+
+
+    public static final class GamePanel extends JPanel {
     private final Board board;
     private final Supplier snakesSupplier;
     private final int cell = 20;
@@ -167,47 +194,50 @@ public final class SnakeApp extends JFrame {
       for (int y = 0; y <= board.height(); y++)
         g2.drawLine(0, y * cell, board.width() * cell, y * cell);
 
-      // Obstáculos
-      g2.setColor(new Color(255, 102, 0));
-      for (var p : board.obstacles()) {
-        int x = p.x() * cell, y = p.y() * cell;
-        g2.fillRect(x + 2, y + 2, cell - 4, cell - 4);
-        g2.setColor(Color.RED);
-        g2.drawLine(x + 4, y + 4, x + cell - 6, y + 4);
-        g2.drawLine(x + 4, y + 8, x + cell - 6, y + 8);
-        g2.drawLine(x + 4, y + 12, x + cell - 6, y + 12);
+      // --- Snapshot del tablero (una lectura por frame) ---
+        var snap = board.snapshot();
+
+        // Obstáculos
         g2.setColor(new Color(255, 102, 0));
-      }
+        for (var p : snap.obstacles()) {
+            int x = p.x() * cell, y = p.y() * cell;
+            g2.fillRect(x + 2, y + 2, cell - 4, cell - 4);
+            g2.setColor(Color.RED);
+            g2.drawLine(x + 4, y + 4, x + cell - 6, y + 4);
+            g2.drawLine(x + 4, y + 8, x + cell - 6, y + 8);
+            g2.drawLine(x + 4, y + 12, x + cell - 6, y + 12);
+            g2.setColor(new Color(255, 102, 0));
+        }
 
-      // Ratones
-      g2.setColor(Color.BLACK);
-      for (var p : board.mice()) {
-        int x = p.x() * cell, y = p.y() * cell;
-        g2.fillOval(x + 4, y + 4, cell - 8, cell - 8);
-        g2.setColor(Color.WHITE);
-        g2.fillOval(x + 8, y + 8, cell - 16, cell - 16);
+        // Ratones
         g2.setColor(Color.BLACK);
-      }
+        for (var p : snap.mice()) {
+            int x = p.x() * cell, y = p.y() * cell;
+            g2.fillOval(x + 4, y + 4, cell - 8, cell - 8);
+            g2.setColor(Color.WHITE);
+            g2.fillOval(x + 8, y + 8, cell - 16, cell - 16);
+            g2.setColor(Color.BLACK);
+        }
 
-      // Teleports (flechas rojas)
-      Map<Position, Position> tp = board.teleports();
-      g2.setColor(Color.RED);
-      for (var entry : tp.entrySet()) {
-        Position from = entry.getKey();
-        int x = from.x() * cell, y = from.y() * cell;
-        int[] xs = { x + 4, x + cell - 4, x + cell - 10, x + cell - 10, x + 4 };
-        int[] ys = { y + cell / 2, y + cell / 2, y + 4, y + cell - 4, y + cell / 2 };
-        g2.fillPolygon(xs, ys, xs.length);
-      }
+        // Teleports (flechas rojas)
+        var tp = snap.teleports();
+        g2.setColor(Color.RED);
+        for (var entry : tp.entrySet()) {
+            Position from = entry.getKey();
+            int x = from.x() * cell, y = from.y() * cell;
+            int[] xs = { x + 4, x + cell - 4, x + cell - 10, x + cell - 10, x + 4 };
+            int[] ys = { y + cell / 2, y + cell / 2, y + 4, y + cell - 4, y + cell / 2 };
+            g2.fillPolygon(xs, ys, xs.length);
+        }
 
-      // Turbo (rayos)
-      g2.setColor(Color.BLACK);
-      for (var p : board.turbo()) {
-        int x = p.x() * cell, y = p.y() * cell;
-        int[] xs = { x + 8, x + 12, x + 10, x + 14, x + 6, x + 10 };
-        int[] ys = { y + 2, y + 2, y + 8, y + 8, y + 16, y + 10 };
-        g2.fillPolygon(xs, ys, xs.length);
-      }
+        // Turbo (rayos)
+        g2.setColor(Color.BLACK);
+        for (var p : snap.turbo()) {
+            int x = p.x() * cell, y = p.y() * cell;
+            int[] xs = { x + 8, x + 12, x + 10, x + 14, x + 6, x + 10 };
+            int[] ys = { y + 2, y + 2, y + 8, y + 8, y + 16, y + 10 };
+            g2.fillPolygon(xs, ys, xs.length);
+        }
 
       // Serpientes
       var snakes = snakesSupplier.get();

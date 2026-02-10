@@ -19,7 +19,7 @@ public final class Snake {
 
   public Direction direction() { return direction; }
 
-  public void turn(Direction dir) {
+  public synchronized void turn(Direction dir) {
     if ((direction == Direction.UP && dir == Direction.DOWN) ||
         (direction == Direction.DOWN && dir == Direction.UP) ||
         (direction == Direction.LEFT && dir == Direction.RIGHT) ||
@@ -29,11 +29,17 @@ public final class Snake {
     this.direction = dir;
   }
 
-  public Position head() { return body.peekFirst(); }
 
-  public Deque<Position> snapshot() { return new ArrayDeque<>(body); }
+    public synchronized int getMaxLength() {
+        return this.maxLength;
+    }
 
-  public void advance(Position newHead, boolean grow) {
+
+    public synchronized Position head() { return body.peekFirst(); }
+
+  public synchronized Deque<Position> snapshot() { return new ArrayDeque<>(body); }
+
+  public synchronized void advance(Position newHead, boolean grow) {
     body.addFirst(newHead);
     if (grow) maxLength++;
     while (body.size() > maxLength) body.removeLast();

@@ -2,7 +2,7 @@
 
 ---
 
-Daniel Palacio s Moreno
+Daniel Palacios Moreno
 
  ---
 
@@ -87,4 +87,10 @@ Si habilitas teleports y turbo, verifica que las reglas no introduzcan carreras.
   - No existe por lo revisado y analizado esperas activas
   - una sincronizacion potencialmente innecesaria o costosa es los metodos obstacles(), mice(), teleports() y turbo() de [Board.java](src/main/java/co/eci/snake/core/Board.java) debido a que se realizan copias constantes para realizar el repaint del tablero el cual bloquea el hilo que esta haciendo step() y tambien genera objetos basura que se dejan de usar una vez se les da un unico uso
 
+## 2) Correcciones 
 
+- Para corregir El problema de que la UI se pausaba pero la logica del juego no se realizaron unos peque;os cambios principalmente una clase que funciona como monitor la cual es [PauseController.java](src/main/java/co/eci/snake/core/engine/PauseController.java) pero dentro de este cambio tambien se agrego una parte dentro del while del SnakeRunner el cual verifica el estado del [GameState.java](src/main/java/co/eci/snake/core/GameState.java) y para si es esta en PAUSED o sale completamente del run si esta en STOPPED.
+- Para corregir el problema del body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java) simplemente se agrego synchronized en los metodos que podin generar condiciones de carrera como head(), snapshot(), advance y por ultimo turn que tambien generaba una condicion en la cual el movimiento podia sobreponerse y generar una mala respuesta al usuario
+- Para corregir el problema de la Garbage generada por los metodos obstacles(), mice(), teleports() y turbo() dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java) lo que se hace ahora es crear un record volatile el cual contiene la informacion necesaria que estos metodos buscan para que de esta manera no se bloquee el metodo step ppor culpa de la generacion de una copia de lo que se pida con el metodo especifico de los ya mencionados.
+
+## 3)
