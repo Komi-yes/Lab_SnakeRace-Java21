@@ -18,15 +18,6 @@ La sincronización debe usar synchronized, wait(), notify() / notifyAll() sobre 
 Entrega en el reporte de laboratorio las observaciones y/o comentarios explicando tu diseño de sincronización (qué lock, qué condición, cómo evitas lost wakeups).
 
 
-### Ejecutar programa [Prime Finder](./src/main/java/primefinder/Main.java) con Maven
-
-```bash
-
-# Desde la raíz del proyecto
-mvn compile exec:java -Dexec.mainClass="primefinder.Main"
-```
-
-
 # Parte 2
 ### 1) Análisis de concurrencia
 * Explica cómo el código usa hilos para dar autonomía a cada serpiente.
@@ -64,6 +55,7 @@ Si habilitas teleports y turbo, verifica que las reglas no introduzcan carreras.
 
 ## Observaciones del ejercicio
 
+En el ejercicio se creo un reloj [Timer.java](src/main/java/primefinder/Timer.java) el cual funciona en un hilo aparte de la logica para calcular los numeros primos dentro de [PrimeFinderThread.java](src/main/java/primefinder/PrimeFinderThread.java) pero en este caso para llevar el tiempo de manera "paralela" con los otros hilos se crea un AtomicBoolean el cual sabe si el temporizador se acabo y por lo tanto saber si tiene que parar el calculo de los numero primeros y parar los hilos de PrimeFinderThread hasta que reciba la señal de reanudar mediante el input de ENTER del usuario hasta llegar al maximo de numeros que se quieren verificar en este caso del 1 al 30000000
 
 # - Parte 2
 
@@ -93,4 +85,22 @@ Si habilitas teleports y turbo, verifica que las reglas no introduzcan carreras.
 - Para corregir el problema del body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java) simplemente se agrego synchronized en los metodos que podin generar condiciones de carrera como head(), snapshot(), advance y por ultimo turn que tambien generaba una condicion en la cual el movimiento podia sobreponerse y generar una mala respuesta al usuario
 - Para corregir el problema de la Garbage generada por los metodos obstacles(), mice(), teleports() y turbo() dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java) lo que se hace ahora es crear un record volatile el cual contiene la informacion necesaria que estos metodos buscan para que de esta manera no se bloquee el metodo step ppor culpa de la generacion de una copia de lo que se pida con el metodo especifico de los ya mencionados.
 
-## 3)
+## 3) Pausa con mensaje
+
+- Aqui en el video se puede ver como interactua el pausar con el mensaje de la Snake mas larga y mas corta que debido a la ambiguedad del ejercicio considere como la "muerta"
+
+[20260210-0259-30.4099626.mp4](images/20260210-0259-30.4099626.mp4)
+
+## 4) Rendimiento con muchas (+20) Snakes
+
+- Aqui en el video se puede ver el Rendimiento del programa en su estado actual de entrega con 25 Snakes el cual como se puede ver no contiene errores de logica ni fallos en los moviminetos o velocidades
+
+[20260210-0304-22.7123541.mp4](images/20260210-0304-22.7123541.mp4)
+
+### Ejecutar programa [Snake](src/main/java/co/eci/snake/app/Main.java) con Maven
+
+```bash
+
+ mvn clean install
+ mvn -q -DskipTests exec:java -Dsnakes=25    
+```

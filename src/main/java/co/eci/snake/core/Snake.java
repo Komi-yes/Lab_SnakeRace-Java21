@@ -30,12 +30,11 @@ public final class Snake {
   }
 
 
-    public synchronized int getMaxLength() {
-        return this.maxLength;
-    }
+  public synchronized int getMaxLength() {
+      return this.maxLength;
+  }
 
-
-    public synchronized Position head() { return body.peekFirst(); }
+  public synchronized Position head() { return body.peekFirst(); }
 
   public synchronized Deque<Position> snapshot() { return new ArrayDeque<>(body); }
 

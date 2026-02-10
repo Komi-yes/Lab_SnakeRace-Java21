@@ -21,7 +21,6 @@ public final class SnakeApp extends JFrame {
   private final GameClock clock;
   private final java.util.List<Snake> snakes = new java.util.ArrayList<>();
   private final PauseController pause = new PauseController();
-  private int longestSnakeLength;
 
   public SnakeApp() {
     super("The Snake Race");
@@ -143,19 +142,10 @@ public final class SnakeApp extends JFrame {
 
             int longest = stats.getMax();
             int shortest = stats.getMin();
-
-
-            if (SwingUtilities.isEventDispatchThread()) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Longest snake: " + longest + "\nShortest snake: " + shortest
-                );
-            } else {
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        "Longest snake: " + longest + "\nShortest snake: " + shortest
-                ));
-            }
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Longest snake: " + longest + "\nShortest snake: " + shortest
+            );
         } else {
             actionButton.setText("Action");
             pause.resume();

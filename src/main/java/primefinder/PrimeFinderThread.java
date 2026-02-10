@@ -31,7 +31,6 @@ public class PrimeFinderThread extends Thread{
                 if (isPrime(i)){
                     primes.add(i);
                     Control.addAmountPrimes();
-                    //System.out.println(i);
                 }
                 Control.addCountedNumber();
             }

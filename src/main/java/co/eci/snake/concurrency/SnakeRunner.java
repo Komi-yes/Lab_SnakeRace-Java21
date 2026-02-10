@@ -30,6 +30,7 @@ public final class SnakeRunner implements Runnable {
                     break;
 
                 maybeTurn();
+                pause.awaitIfPaused();
                 var res = board.step(snake);
 
                 if (res == Board.MoveResult.HIT_OBSTACLE) {
