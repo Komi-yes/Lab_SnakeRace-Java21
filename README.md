@@ -55,9 +55,7 @@ Si habilitas teleports y turbo, verifica que las reglas no introduzcan carreras.
 
 ## Observaciones del ejercicio
 
-En el ejercicio se creo un reloj [Timer.java](src/main/java/primefinder/Timer.java) el cual funciona en un hilo aparte de la logica para calcular los numeros primos dentro de [PrimeFinderThread.java](src/main/java/primefinder/PrimeFinderThread.java) pero en este caso para llevar el tiempo de manera "paralela" con los otros hilos se crea un AtomicBoolean el cual sabe si el temporizador se acabo y por lo tanto saber si tiene que parar el calculo de los numero primeros y parar los hilos de PrimeFinderThread hasta que reciba la señal de reanudar mediante el input de ENTER del usuario hasta llegar al maximo de numeros que se quieren verificar en este caso del 1 al 30000000
-
-# - Parte 2
+En el ejercicio se creó un reloj [Timer.java](src/main/java/primefinder/Timer.java), el cual funciona en un hilo aparte de la lógica para calcular los números primos dentro de [PrimeFinderThread.java](src/main/java/primefinder/PrimeFinderThread.java); pero en este caso, para llevar el tiempo de manera "paralela" con los otros hilos, se crea un AtomicBoolean que sabe si el temporizador se acabó y, por lo tanto, sabe si tiene que parar el cálculo de los números primos y parar los hilos de PrimeFinderThread hasta que reciba la señal de reanudar mediante la entrada de ENTER del usuario, hasta llegar al máximo de números que se quieren verificar, en este caso, del 1 al 30000000.# - Parte 2
 
 ## 1) Analisis de concurrencia codigo original
 
@@ -68,32 +66,34 @@ En el ejercicio se creo un reloj [Timer.java](src/main/java/primefinder/Timer.ja
 ### Analisis posibles fallas
 
 - Posibles condiciones de carrera:
-  - El body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java) genera condicion de carrera debido a que este no esta protegido de ninguna manera y este esta siendo modificado, y leido desde diferentes hilos se puede ver especificamente desde la funciones usadas dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java) como advance o head que son funciones de Snake o directamente desde funciones como snapshot el cual crea una copia de Body, por otra parte al usar una coleccion como lo es ArrayDeque que no es thread-safe lo que puede generar lecturas inconsistentes, excepciones en tiempo de ejecucion o valores intermedios
-  - El movimiento de las Snakes que los usuarios pueden mover se pueden solapar con los movimientos que genera el programa aleatoreamente lo que genera una mala representacion del movimiento y tambien puede generar acciones indebidas como moverse en 180º
-  - Que el boton que permite pausar geneera inconsistencia debido a que los [SnakeRunner.java](src/main/java/co/eci/snake/concurrency/SnakeRunner.java) de las Snakes no se detienen lo que al "reanudar" las Snakes aparecen en sus posiciones "futuras" pareciendo asi que se hubieran teletransportado
+    - El body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java) genera condición de carrera debido a que no está protegido de ninguna manera y está siendo modificado y leído desde diferentes hilos. Se puede ver específicamente desde las funciones usadas dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java) como advance o head, que son funciones de Snake, o directamente desde funciones como snapshot, el cual crea una copia de Body. Por otra parte, al usar una colección como ArrayDeque, que no es thread-safe, se pueden generar lecturas inconsistentes, excepciones en tiempo de ejecución o valores intermedios.
+    - El movimiento de las snakes que los usuarios pueden mover se puede solapar con los movimientos que genera el programa aleatoriamente, lo que genera una mala representación del movimiento y también puede generar acciones indebidas como moverse en 180º.
+    - Que el botón que permite pausar genere inconsistencia debido a que los [SnakeRunner.java](src/main/java/co/eci/snake/concurrency/SnakeRunner.java) de las snakes no se detienen, lo que al "reanudar" hace que las snakes aparezcan en sus posiciones "futuras", pareciendo así que se hubieran teletransportado.
+
 - Colecciones o estructuras no seguras en contexto concurrente:
-  - el ArrayDeque no es Thread-Safe usado en el body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java).
-  - Teoricamente el HashSet o el HashMap los cuales son usados en [Board.java](src/main/java/co/eci/snake/core/Board.java) no Thread-Safe pero debido  al comportamiento actual funcionan de manera adecuada
-  - Teoricamente ArrayList el cual es usado en [SnakeApp.java](src/main/java/co/eci/snake/ui/legacy/SnakeApp.java) no es Thread-Safe pero en el contexto del uso que se le da no es realmente peligroso amenos que se realicen mutaciones dentro de la lista dentro del codigo
+    - El ArrayDeque no es thread-safe, usado en el body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java).
+    - Teóricamente, el HashSet o el HashMap, los cuales son usados en [Board.java](src/main/java/co/eci/snake/core/Board.java), no son thread-safe, pero debido al comportamiento actual funcionan de manera adecuada.
+    - Teóricamente, ArrayList, el cual es usado en [SnakeApp.java](src/main/java/co/eci/snake/ui/legacy/SnakeApp.java), no es thread-safe, pero en el contexto del uso que se le da no es realmente peligroso, a menos que se realicen mutaciones dentro de la lista dentro del código.
+
 - Ocurrencias de espera activa (busy-wait) o de sincronización innecesaria:
-  - No existe por lo revisado y analizado esperas activas
-  - una sincronizacion potencialmente innecesaria o costosa es los metodos obstacles(), mice(), teleports() y turbo() de [Board.java](src/main/java/co/eci/snake/core/Board.java) debido a que se realizan copias constantes para realizar el repaint del tablero el cual bloquea el hilo que esta haciendo step() y tambien genera objetos basura que se dejan de usar una vez se les da un unico uso
+    - No existe, por lo revisado y analizado, esperas activas.
+    - Una sincronización potencialmente innecesaria o costosa son los métodos obstacles(), mice(), teleports() y turbo() de [Board.java](src/main/java/co/eci/snake/core/Board.java), debido a que se realizan copias constantes para realizar el repaint del tablero, lo cual bloquea el hilo que está haciendo step() y también genera objetos basura que se dejan de usar una vez se les da un único uso.
 
 ## 2) Correcciones 
 
-- Para corregir El problema de que la UI se pausaba pero la logica del juego no se realizaron unos peque;os cambios principalmente una clase que funciona como monitor la cual es [PauseController.java](src/main/java/co/eci/snake/core/engine/PauseController.java) pero dentro de este cambio tambien se agrego una parte dentro del while del SnakeRunner el cual verifica el estado del [GameState.java](src/main/java/co/eci/snake/core/GameState.java) y para si es esta en PAUSED o sale completamente del run si esta en STOPPED.
-- Para corregir el problema del body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java) simplemente se agrego synchronized en los metodos que podin generar condiciones de carrera como head(), snapshot(), advance y por ultimo turn que tambien generaba una condicion en la cual el movimiento podia sobreponerse y generar una mala respuesta al usuario
-- Para corregir el problema de la Garbage generada por los metodos obstacles(), mice(), teleports() y turbo() dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java) lo que se hace ahora es crear un record volatile el cual contiene la informacion necesaria que estos metodos buscan para que de esta manera no se bloquee el metodo step ppor culpa de la generacion de una copia de lo que se pida con el metodo especifico de los ya mencionados.
+- Para corregir el problema de que la UI se pausaba pero la lógica del juego no, se realizaron unos pequeños cambios, principalmente una clase que funciona como monitor, la cual es [PauseController.java](src/main/java/co/eci/snake/core/engine/PauseController.java); pero dentro de este cambio también se agregó una parte dentro del while del SnakeRunner, el cual verifica el estado del [GameState.java](src/main/java/co/eci/snake/core/GameState.java) y para si está en PAUSED o sale completamente del run si está en STOPPED.
+- Para corregir el problema del body de [Snake.java](src/main/java/co/eci/snake/core/Snake.java), simplemente se agregó synchronized en los métodos que podían generar condiciones de carrera, como head(), snapshot(), advance() y, por último, turn(), que también generaba una condición en la cual el movimiento podía sobreponerse y generar una mala respuesta al usuario.
+- Para corregir el problema de la basura generada por los métodos obstacles(), mice(), teleports() y turbo() dentro de [Board.java](src/main/java/co/eci/snake/core/Board.java), lo que se hace ahora es crear un record volatile el cual contiene la información necesaria que estos métodos buscan, para que de esta manera no se bloquee el método step() por culpa de la generación de una copia de lo que se pida con el método específico de los ya mencionados.
 
 ## 3) Pausa con mensaje
 
-- Aqui en el video se puede ver como interactua el pausar con el mensaje de la Snake mas larga y mas corta que debido a la ambiguedad del ejercicio considere como la "muerta"
+- Aquí en el video se puede ver cómo interactúa el pausar con el mensaje de la snake más larga y más corta, que, debido a la ambigüedad del ejercicio, consideré como la "muerta".
 
 [20260210-0259-30.4099626.mp4](images/20260210-0259-30.4099626.mp4)
 
 ## 4) Rendimiento con muchas (+20) Snakes
 
-- Aqui en el video se puede ver el Rendimiento del programa en su estado actual de entrega con 25 Snakes el cual como se puede ver no contiene errores de logica ni fallos en los moviminetos o velocidades
+- Aquí en el video se puede ver el rendimiento del programa en su estado actual de entrega con 25 Snakes, el cual, como se puede ver, no contiene errores de lógica ni fallos en los movimientos o velocidades.
 
 [20260210-0304-22.7123541.mp4](images/20260210-0304-22.7123541.mp4)
 
